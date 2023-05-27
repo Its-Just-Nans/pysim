@@ -4,75 +4,129 @@ from pySim.ota import *
 from pySim.sms import SMS_SUBMIT, SMS_DELIVER, AddressField
 from pySim.utils import h2b, h2b
 
-# KIC1 + KID1 of 8988211000000515398
-#KIC1 = h2b('C039ED58F7B81446105E79EBFD373038')
-#KID1 = h2b('1799B93FE53F430BD7FD4810C77E1FDF')
-#KIC3 = h2b('167F2576D64C8D41862954875C8D7979')
-#KID3 = h2b('ECAE122B0E6AE4186D6487D50FDC0922')
+# pre-defined SPI values for use in test cases below
+SPI_CC_POR_CIPHERED_CC = {
+    'counter':'no_counter',
+    'ciphering':True,
+    'rc_cc_ds': 'cc',
+    'por_in_submit':False,
+    'por_shall_be_ciphered':True,
+    'por_rc_cc_ds': 'cc',
+    'por': 'por_required'
+    }
 
-# KIC1 + KID1 of 8988211000000467285
-#KIC1 = h2b('D0FDA31990D8D64178601317191669B4')
-#KID1 = h2b('D24EB461799C5E035C77451FD9404463')
-#KIC3 = h2b('C21DD66ACAC13CB3BC8B331B24AFB57B')
-#KID3 = h2b('12110C78E678C25408233076AA033615')
+SPI_CC_POR_UNCIPHERED_CC = {
+    'counter':'no_counter',
+    'ciphering':True,
+    'rc_cc_ds': 'cc',
+    'por_in_submit':False,
+    'por_shall_be_ciphered':False,
+    'por_rc_cc_ds': 'cc',
+    'por': 'por_required'
+}
 
-# KIC + KID for SJA5 samples
-KIC1 = h2b('100102030405060708090a0b0c0d0e0f')
-KID1 = h2b('101102030405060708090a0b0c0d0e0f')
-KIC3 = h2b('300102030405060708090a0b0c0d0e0f')
-KID3 = h2b('301102030405060708090a0b0c0d0e0f')
+SPI_CC_POR_UNCIPHERED_NOCC = {
+    'counter':'no_counter',
+    'ciphering':True,
+    'rc_cc_ds': 'cc',
+    'por_in_submit':False,
+    'por_shall_be_ciphered':False,
+    'por_rc_cc_ds': 'no_rc_cc_ds',
+    'por': 'por_required'
+}
 
-od = OtaKeyset(algo_crypt='triple_des_cbc2', kic_idx=3, kic=KIC3,
-               algo_auth='triple_des_cbc2', kid_idx=3, kid=KID3)
-print(od.crypt)
-print(od.auth)
+# SJA5 SAMPLE cards provisioned by execute_ipr.py
+OTA_KEYSET_SJA5_SAMPLES = OtaKeyset(algo_crypt='triple_des_cbc2', kic_idx=3,
+                                    algo_auth='triple_des_cbc2', kid_idx=3,
+                                    kic=h2b('300102030405060708090a0b0c0d0e0f'),
+                                    kid=h2b('301102030405060708090a0b0c0d0e0f'))
 
-dialect = OtaDialectSms()
+OTA_KEYSET_SJA5_AES128 = OtaKeyset(algo_crypt='aes_cbc', kic_idx=3,
+                                   algo_auth='aes_cmac', kid_idx=3,
+                                   kic=h2b('300102030405060708090a0b0c0d0e0f'),
+                                   kid=h2b('301102030405060708090a0b0c0d0e0f'))
 
-# RAM: B00000
-# SIM RFM: B00010
-# USIM RFM: B00011
-tar = h2b('B00011')
+# TODO: AES192
+# TODO: AES256
 
-spi = {'counter':'no_counter', 'ciphering':True, 'rc_cc_ds': 'cc', 'por_in_submit':False, 'por_shall_be_ciphered':True, 'por_rc_cc_ds': 'cc', 'por': 'por_required'}
-outp = dialect.encode_cmd(od, tar, spi, apdu=b'\x00\xa4\x00\x04\x02\x3f\x00')
-print("result: %s" % b2h(outp))
+testcases = [
+        {
+            'name': '3DES-SJA5-CIPHERED-CC',
+            'ota_keyset': OTA_KEYSET_SJA5_SAMPLES,
+            'spi': SPI_CC_POR_CIPHERED_CC,
+            'request': {
+                'apdu': b'\x00\xa4\x00\x04\x02\x3f\x00',
+                'encoded_cmd': '00201506193535b00011ae733256918d050b87c94fbfe12e4dc402f262c41cf67f2f',
+                'encoded_tpdu': '400881214365877ff6227052000000000302700000201506193535b00011ae733256918d050b87c94fbfe12e4dc402f262c41cf67f2f',
+                },
+            'response': {
+                'encoded_resp': '027100001c12b000118bb989492c632529326a2f4681feb37c825bc9021c9f6d0b',
+                }
+        }, {
+            'name': '3DES-SJA5-UNCIPHERED-CC',
+            'ota_keyset': OTA_KEYSET_SJA5_SAMPLES,
+            'spi': SPI_CC_POR_UNCIPHERED_CC,
+            'request': {
+                'apdu': b'\x00\xa4\x00\x04\x02\x3f\x00',
+                'encoded_cmd': '00201506093535b00011c49ac91ab8159ba5b83a54fb6385e0a5e31694f8b215fafc',
+                'encoded_tpdu': '400881214365877ff6227052000000000302700000201506093535b00011c49ac91ab8159ba5b83a54fb6385e0a5e31694f8b215fafc',
+                },
+            'response': {
+                'encoded_resp': '027100001612b0001100000000000000b5bcd6353a421fae016132',
+                }
+        }, {
+            'name': '3DES-SJA5-UNCIPHERED-NOCC',
+            'ota_keyset': OTA_KEYSET_SJA5_SAMPLES,
+            'spi': SPI_CC_POR_UNCIPHERED_NOCC,
+            'request': {
+                'apdu': b'\x00\xa4\x00\x04\x02\x3f\x00',
+                'encoded_cmd': '00201506013535b000113190be334900f52b025f3f7eddfe868e96ebf310023b7769',
+                'encoded_tpdu': '400881214365877ff6227052000000000302700000201506013535b000113190be334900f52b025f3f7eddfe868e96ebf310023b7769',
+                },
+            'response': {
+                'encoded_resp': '027100000e0ab0001100000000000000016132',
+                }
+        }, {
+            'name': 'AES128-SJA5-CIPHERED-CC',
+            'ota_keyset': OTA_KEYSET_SJA5_AES128,
+            'spi': SPI_CC_POR_CIPHERED_CC,
+            'request': {
+                'apdu': b'\x00\xa4\x00\x04\x02\x3f\x00',
+                'encoded_cmd': '00201506193535b00011ae733256918d050b87c94fbfe12e4dc402f262c41cf67f2f',
+                'encoded_tpdu': '400881214365877ff6227052000000000302700000201506193535b00011ae733256918d050b87c94fbfe12e4dc402f262c41cf67f2f',
+                },
+            'response': {
+                'encoded_resp': '027100001c12b000118bb989492c632529326a2f4681feb37c825bc9021c9f6d0b',
+                }
+        }
+    ]
 
-with_udh = b'\x02\x70\x00' + outp
-print("with_udh: %s" % b2h(with_udh))
+for t in testcases:
+    print()
+    print("==== TESTCASE: %s" % t['name'])
+    od = t['ota_keyset']
+
+    # RAM: B00000
+    # SIM RFM: B00010
+    # USIM RFM: B00011
+    tar = h2b('B00011')
+
+    dialect = OtaDialectSms()
+    outp = dialect.encode_cmd(od, tar, t['spi'], apdu=t['request']['apdu'])
+    print("result: %s" % b2h(outp))
+    assert(b2h(outp) == t['request']['encoded_cmd'])
+
+    with_udh = b'\x02\x70\x00' + outp
+    print("with_udh: %s" % b2h(with_udh))
 
 
-# processing of the response[s] from the card
+    # processing of the response from the card
+    da = AddressField('12345678', 'unknown', 'isdn_e164')
+    #tpdu = SMS_SUBMIT(tp_udhi=True, tp_mr=0x23, tp_da=da, tp_pid=0x7F, tp_dcs=0xF6, tp_udl=3, tp_ud=with_udh)
+    tpdu = SMS_DELIVER(tp_udhi=True, tp_oa=da, tp_pid=0x7F, tp_dcs=0xF6, tp_scts=h2b('22705200000000'), tp_udl=3, tp_ud=with_udh)
+    print("TPDU: %s" % tpdu)
+    print("tpdu: %s" % b2h(tpdu.toBytes()))
+    assert(b2h(tpdu.toBytes()) == t['request']['encoded_tpdu'])
 
-da = AddressField('12345678', 'unknown', 'isdn_e164')
-#tpdu = SMS_SUBMIT(tp_udhi=True, tp_mr=0x23, tp_da=da, tp_pid=0x7F, tp_dcs=0xF6, tp_udl=3, tp_ud=with_udh)
-tpdu = SMS_DELIVER(tp_udhi=True, tp_oa=da, tp_pid=0x7F, tp_dcs=0xF6, tp_scts=h2b('22705200000000'), tp_udl=3, tp_ud=with_udh)
-print(tpdu)
-print("tpdu: %s" % b2h(tpdu.toBytes()))
-
-print()
-
-if True:
-    print("SPI with ciphered PoR")
-    spi = {'counter':'no_counter', 'ciphering':True, 'rc_cc_ds': 'cc', 'por_in_submit':False,
-           'por_shall_be_ciphered':True, 'por_rc_cc_ds': 'cc', 'por': 'por_required'}
-    #dialect.decode_resp(od, spi, '027100001c12b000119660ebdb81be189b5e4389e9e7ab2bc0954f963ad869ed7c')
-    r = dialect.decode_resp(od, spi, '027100001c12b000118bb989492c632529326a2f4681feb37c825bc9021c9f6d0b')
-    print(r)
-
-if True:
-    print("SPI with un-ciphered PoR")
-    spi = {'counter':'no_counter', 'ciphering':True, 'rc_cc_ds': 'cc', 'por_in_submit':False,
-           'por_shall_be_ciphered':False, 'por_rc_cc_ds': 'cc', 'por': 'por_required'}
-    #dialect.decode_resp(od, spi, '027100001612b000110000000000000055f47118381175fb01612f')
-    r = dialect.decode_resp(od, spi, '027100001612b0001100000000000000b5bcd6353a421fae016132')
-    print(r)
-
-if True:
-    print("SPI without ciphering or cryptographic checksum")
-    spi = {'counter':'no_counter', 'ciphering':True, 'rc_cc_ds': 'cc', 'por_in_submit':False,
-           'por_shall_be_ciphered':False, 'por_rc_cc_ds': 'no_rc_cc_ds', 'por': 'por_required'}
-    #r = dialect.decode_resp(od, spi, '027100000e0ab000110000000000000001612f')
-    r = dialect.decode_resp(od, spi, '027100000e0ab0001100000000000000016132')
-    print(r)
-
+    r = dialect.decode_resp(od, t['spi'], t['response']['encoded_resp'])
+    print("RESP: ", r)
