@@ -23,6 +23,7 @@ setup(
         "pycryptodomex",
         "packaging",
         "smpp.pdu @ git+https://github.com/hologram-io/smpp.pdu",
+        "smpp.twisted @ git+https://github.com/jookies/smpp.twisted",
     ],
     scripts=[
         'pySim-prog.py',
