@@ -102,7 +102,11 @@ class Tracer:
         """Main loop of tracer: Iterates over all Apdu received from source."""
         while True:
             # obtain the next APDU from the source (blocking read)
-            apdu = self.source.read()
+            try:
+                apdu = self.source.read()
+            except StopIteration:
+                print("no more data, stop iteration.")
+                return 0
 
             if isinstance(apdu, CardReset):
                 self.rs.reset()
