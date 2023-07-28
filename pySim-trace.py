@@ -105,6 +105,7 @@ class Tracer:
             # obtain the next APDU from the source (blocking read)
             try:
                 apdu = self.source.read()
+                apdu_counter = apdu_counter + 1
             except StopIteration:
                 print("%i APDUs parsed, stop iteration." % apdu_counter)
                 return 0
@@ -127,7 +128,6 @@ class Tracer:
                 continue
 
             self.format_capdu(apdu, inst)
-            apdu_counter = apdu_counter + 1
 
 option_parser = argparse.ArgumentParser(description='Osmocom pySim high-level SIM card trace decoder',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
