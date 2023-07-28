@@ -100,12 +100,13 @@ class Tracer:
 
     def main(self):
         """Main loop of tracer: Iterates over all Apdu received from source."""
+        apdu_counter = 0
         while True:
             # obtain the next APDU from the source (blocking read)
             try:
                 apdu = self.source.read()
             except StopIteration:
-                print("no more data, stop iteration.")
+                print("%i APDUs parsed, stop iteration." % apdu_counter)
                 return 0
 
             if isinstance(apdu, CardReset):
@@ -126,6 +127,7 @@ class Tracer:
                 continue
 
             self.format_capdu(apdu, inst)
+            apdu_counter = apdu_counter + 1
 
 option_parser = argparse.ArgumentParser(description='Osmocom pySim high-level SIM card trace decoder',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
